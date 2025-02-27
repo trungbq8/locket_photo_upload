@@ -88,7 +88,7 @@ def upload_handler():
     if response.status_code == 200:
         return jsonify({"success": True, "message": "Upload successful!"})
     else:
-        return jsonify({"success": False, "message": "Upload failed. Please try again."}), 500
+        return jsonify({"success": False, "message": f"Upload failed: {response.text}"}), 500
 
 @app.route('/logout', methods=['POST'])
 def logout():
