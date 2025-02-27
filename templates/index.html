@@ -38,6 +38,10 @@
             z-index: 50;
             max-width: 300px;
         }
+        .drag-active {
+            background-color: rgba(147, 51, 234, 0.1);
+            border-color: rgba(147, 51, 234, 0.5) !important;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-r from-purple-500 to-pink-500 min-h-screen flex items-center justify-center p-4">
@@ -79,6 +83,14 @@
                     <i class="fas fa-sign-in-alt mr-2"></i> Login
                 </button>
             </form>
+            
+            <!-- GitHub link for login section -->
+            <div class="mt-6 text-center">
+                <a href="https://github.com/trungbq8/locket_photo_upload" target="_blank" class="inline-flex items-center text-gray-600 hover:text-purple-600 transition-colors">
+                    <i class="fab fa-github text-lg mr-2"></i>
+                    <span class="text-sm">View on GitHub</span>
+                </a>
+            </div>
         </div>
 
         <div id="uploadSection" class="{% if not logged_in %}hidden{% endif %}">
@@ -95,7 +107,7 @@
             <form id="uploadForm" class="space-y-6">
                 <div>
                     <label class="file-input-label block">
-                        <div class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg py-6 px-4 hover:bg-gray-50 transition-colors">
+                        <div id="dropArea" class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg py-6 px-4 hover:bg-gray-50 transition-colors">
                             <div id="uploadIcon" class="text-purple-500 mb-2">
                                 <i class="fas fa-cloud-upload-alt text-3xl"></i>
                             </div>
@@ -122,6 +134,14 @@
                     <i class="fas fa-paper-plane mr-2"></i> Upload to Locket
                 </button>
             </form>
+            
+            <!-- GitHub link for upload section -->
+            <div class="mt-6 text-center">
+                <a href="https://github.com/trungbq8/locket_photo_upload" target="_blank" class="inline-flex items-center text-gray-600 hover:text-purple-600 transition-colors">
+                    <i class="fab fa-github text-lg mr-2"></i>
+                    <span class="text-sm">View on GitHub</span>
+                </a>
+            </div>
         </div>
     </div>
 
@@ -137,6 +157,7 @@
             const uploadIcon = document.getElementById('uploadIcon');
             const userEmail = document.getElementById('userEmail');
             const uploadBtn = document.getElementById('uploadBtn');
+            const dropArea = document.getElementById('dropArea');
             
             function showAlert(message, type) {
                 const alertContainer = document.getElementById('alertContainer');
@@ -151,6 +172,55 @@
                         alertContainer.removeChild(alert);
                     }, 300);
                 }, 3000);
+            }
+            
+            // Implement drag and drop functionality
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight() {
+                dropArea.classList.add('drag-active');
+            }
+            
+            function unhighlight() {
+                dropArea.classList.remove('drag-active');
+            }
+            
+            dropArea.addEventListener('drop', handleDrop, false);
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files.length > 0) {
+                    // Check if the file is an image
+                    const file = files[0];
+                    if (!file.type.match('image.*')) {
+                        showAlert('Please drop an image file (PNG, JPG, GIF)', 'error');
+                        return;
+                    }
+                    
+                    // Update the file input
+                    photoInput.files = dt.files;
+                    
+                    // Trigger the change event to preview the image
+                    const event = new Event('change', { bubbles: true });
+                    photoInput.dispatchEvent(event);
+                }
             }
             
             loginForm.addEventListener('submit', function(e) {
