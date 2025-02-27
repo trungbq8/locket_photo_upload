@@ -5,11 +5,11 @@ import base64
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 import hashlib
-from datetime import timedelta
+from PIL import Image
+import io
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 
 LOGIN_URL = "https://locketuploader-be-render.onrender.com/locket/login"
 UPLOAD_MEDIA_URL = "https://locketuploader-be-render.onrender.com/locket/upload-media"
@@ -72,23 +72,45 @@ def upload_handler():
     
     file = request.files['photo']
     caption = request.form.get('caption', '')
-    
+
     if file.filename == '':
         return jsonify({"success": False, "message": "No file selected"}), 400
+
+    image = Image.open(file)
+
+    if image.mode in ("RGBA", "P"):
+        image = image.convert("RGB")
+
+    img_buffer = io.BytesIO()
+    image.save(img_buffer, format="JPEG", quality=95)
     
-    # Send file directly to Locket API
-    files = {'images': (file.filename, file, 'image/jpeg')}
+    if img_buffer.tell() <= 1024 * 1024:
+        img_buffer.seek(0)
+    else:
+        width, height = image.size
+        while img_buffer.tell() > 1024 * 1024:
+            width = int(width * 0.9)  # Reduce width by 10%
+            height = int(height * 0.9)  # Reduce height by 10%
+            image = image.resize((width, height), Image.LANCZOS)
+
+            img_buffer = io.BytesIO()
+            image.save(img_buffer, format="JPEG", quality=95)
+
+        img_buffer.seek(0)
+
+    # Prepare the file for upload
+    files = {'images': ('compressed.jpg', img_buffer, 'image/jpeg')}
     data = {
         "caption": caption,
         "userId": session['user_id'],
         "idToken": session['id_token']
     }
     response = requests.post(UPLOAD_MEDIA_URL, files=files, data=data)
-    
+
     if response.status_code == 200:
         return jsonify({"success": True, "message": "Upload successful!"})
     else:
-        return jsonify({"success": False, "message": f"Upload failed: {session['user_id']} {response.text}"}), 500
+        return jsonify({"success": False, "message": "Upload failed. Please try again."}), 500
 
 @app.route('/logout', methods=['POST'])
 def logout():
