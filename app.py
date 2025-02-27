@@ -5,9 +5,11 @@ import base64
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 import hashlib
+from datetime import timedelta
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 
 LOGIN_URL = "https://locketuploader-be-render.onrender.com/locket/login"
 UPLOAD_MEDIA_URL = "https://locketuploader-be-render.onrender.com/locket/upload-media"
