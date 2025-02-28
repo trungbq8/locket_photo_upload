@@ -77,6 +77,13 @@ def upload_handler():
         return jsonify({"success": False, "message": "No file selected"}), 400
 
     image = Image.open(file)
+    
+    if hasattr(image, '_getexif'):
+        exif = image._getexif()
+        if exif:
+            exif = {ExifTags.TAGS.get(tag, tag): value for tag, value in exif.items()}
+            if 'Orientation' in exif:
+                del exif['Orientation']
 
     if image.mode in ("RGBA", "P"):
         image = image.convert("RGB")
@@ -89,8 +96,8 @@ def upload_handler():
     else:
         width, height = image.size
         while img_buffer.tell() > 1024 * 1024:
-            width = int(width * 0.9)  # Reduce width by 10%
-            height = int(height * 0.9)  # Reduce height by 10%
+            width = int(width * 0.9)
+            height = int(height * 0.9)
             image = image.resize((width, height), Image.LANCZOS)
 
             img_buffer = io.BytesIO()
