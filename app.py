@@ -78,12 +78,14 @@ def upload_handler():
 
     image = Image.open(file)
     
-    if hasattr(image, '_getexif'):
+    try:
         exif = image._getexif()
         if exif:
-            exif = {ExifTags.TAGS.get(tag, tag): value for tag, value in exif.items()}
-            if 'Orientation' in exif:
-                del exif['Orientation']
+            exif_dict = {ExifTags.TAGS.get(tag, tag): value for tag, value in exif.items()}
+            if "Orientation" in exif_dict:
+                image = image.copy()
+    except Exception:
+        pass
 
     if image.mode in ("RGBA", "P"):
         image = image.convert("RGB")
